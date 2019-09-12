@@ -1,8 +1,10 @@
 package com.example.demo;
 
-import java.lang.management.LockInfo;
 import java.util.List;
+import java.util.stream.Collectors;
 
+import org.springframework.hateoas.Resource;
+import org.springframework.hateoas.Resources;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -11,18 +13,30 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import static org.springframework.hateoas.core.DummyInvocationUtils.methodOn;
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
+
 @RestController
 class EstudianteControlador {
 
     private final EstudienteRepositorio repositorio;
 
-    public EstudianteControlador(EstudienteRepositorio repositorio) {
+    EstudianteControlador(EstudienteRepositorio repositorio) {
         this.repositorio = repositorio;
     }
 
-    @GetMapping("/estudiantes")
-    List<Estudiante> all(){
-        return repositorio.findAll();
+    @GetMapping(value = "/estudiantes", produces="application/json; charset=UTF-8"
+    )
+    Resources<Resource<Estudiante>> all(){
+
+        List<Resource<Estudiante>> estudiantes = repositorio.findAll().stream()
+                .map(estudiante -> new Resource<>(estudiante,
+                        linkTo(methodOn(EstudianteControlador.class).one(estudiante.getId())).withSelfRel(),
+                        linkTo(methodOn(EstudianteControlador.class).all()).withRel("estudiantes")))
+                .collect(Collectors.toList());
+
+        return new Resources<>(estudiantes,
+                linkTo(methodOn(EstudianteControlador.class).all()).withSelfRel());
     }
 
     @PostMapping("/estudiantes")
@@ -30,10 +44,16 @@ class EstudianteControlador {
         return repositorio.save(estudianteNuevo);
     }
 
-    @GetMapping("/estudiantes/{id}")
-    Estudiante uno(@PathVariable Long id){
-        return repositorio.findById(id)
+    @GetMapping(value = "/estudiantes/{id}", produces="application/json; charset=UTF-8"
+    )
+    Resource<Estudiante> one(@PathVariable Long id){
+
+        Estudiante estudiante = repositorio.findById(id)
                 .orElseThrow(() -> new EstudianteNotFoundException(id));
+
+        return new Resource<>(estudiante,
+                linkTo(methodOn(EstudianteControlador.class).one(id)).withSelfRel(),
+                linkTo(methodOn(EstudianteControlador.class).all()).withRel("estudiantes"));
     }
 
     @PutMapping("/estudiante/{id}")
