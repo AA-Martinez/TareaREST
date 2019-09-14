@@ -13,8 +13,8 @@ class EstudianteDBA {
     @Bean
     CommandLineRunner iniciarBD(EstudienteRepositorio repositorio){
         return args -> {
-            log.info("Cargando "+ repositorio.save(new Estudiante("Alejandro","Martinez",73048478)));
-            log.info("Cargando "+ repositorio.save(new Estudiante("Cristopher"," Castro",77743818)));
+            log.info("Cargando "+ repositorio.save(new Estudiante("Alejandro Martinez",73048478)));
+            log.info("Cargando "+ repositorio.save(new Estudiante("Cristopher Castro",77743818)));
         };
     }
 
