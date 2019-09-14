@@ -1,10 +1,13 @@
 package com.example.demo;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.hateoas.Resource;
 import org.springframework.hateoas.Resources;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,9 +23,11 @@ import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 class EstudianteControlador {
 
     private final EstudienteRepositorio repositorio;
+    private final EstudianteResourceAssambler assambler;
 
-    EstudianteControlador(EstudienteRepositorio repositorio) {
+    public EstudianteControlador(EstudienteRepositorio repositorio, EstudianteResourceAssambler assambler) {
         this.repositorio = repositorio;
+        this.assambler = assambler;
     }
 
     @GetMapping(value = "/estudiantes", produces="application/json; charset=UTF-8"
@@ -30,9 +35,7 @@ class EstudianteControlador {
     Resources<Resource<Estudiante>> all(){
 
         List<Resource<Estudiante>> estudiantes = repositorio.findAll().stream()
-                .map(estudiante -> new Resource<>(estudiante,
-                        linkTo(methodOn(EstudianteControlador.class).one(estudiante.getId())).withSelfRel(),
-                        linkTo(methodOn(EstudianteControlador.class).all()).withRel("estudiantes")))
+                .map(assambler::toResource)
                 .collect(Collectors.toList());
 
         return new Resources<>(estudiantes,
@@ -40,9 +43,14 @@ class EstudianteControlador {
     }
 
     @PostMapping("/estudiantes")
-    Estudiante estudianteNuevo(@RequestBody Estudiante estudianteNuevo){
-        return repositorio.save(estudianteNuevo);
+    ResponseEntity<?> estudianteNuevo(@RequestBody Estudiante estudianteNuevo) throws URISyntaxException {
+        Resource<Estudiante> resource = assambler.toResource(repositorio.save(estudianteNuevo));
+
+        return ResponseEntity
+                .created(new URI(resource.getId().expand().getHref()))
+                .body(resource);
     }
+
 
     @GetMapping(value = "/estudiantes/{id}", produces="application/json; charset=UTF-8"
     )
@@ -57,8 +65,9 @@ class EstudianteControlador {
     }
 
     @PutMapping("/estudiante/{id}")
-    Estudiante remplazarEstudiante(@RequestBody Estudiante estudianteNuevo, @PathVariable Long id){
-        return repositorio.findById(id)
+    ResponseEntity<?> remplazarEstudiante(@RequestBody Estudiante estudianteNuevo, @PathVariable Long id) throws URISyntaxException{
+
+        Estudiante estudianteActualizado = repositorio.findById(id)
                 .map(estudiante -> {
                     estudiante.setNombre(estudianteNuevo.getNombre());
                     estudiante.setNumeroCelular(estudianteNuevo.getNumeroCelular());
@@ -68,12 +77,23 @@ class EstudianteControlador {
                     estudianteNuevo.setId(id);
                     return repositorio.save(estudianteNuevo);
                 });
+
+        Resource<Estudiante> resource = assambler.toResource(estudianteActualizado);
+
+        return ResponseEntity
+                .created(new URI(resource.getId().expand().getHref()))
+                .body(resource);
+
     }
 
     @DeleteMapping("/estudiante/{id}")
-    void borrarEstudiante(@PathVariable Long id){
+    ResponseEntity<?> borrarEstudiante(@PathVariable Long id){
+
         repositorio.deleteById(id);
+        return ResponseEntity.noContent().build();
     }
+
+
 
 
 
