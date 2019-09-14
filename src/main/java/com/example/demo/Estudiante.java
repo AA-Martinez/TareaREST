@@ -19,4 +19,28 @@ class Estudiante {
         this.nombre = nombre;
         this.numeroCelular = numeroCelular;
     }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getNombre() {
+        return nombre;
+    }
+
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
+    }
+
+    public int getNumeroCelular() {
+        return numeroCelular;
+    }
+
+    public void setNumeroCelular(int numeroCelular) {
+        this.numeroCelular = numeroCelular;
+    }
 }
